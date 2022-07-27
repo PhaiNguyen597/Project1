@@ -8,7 +8,7 @@ class User:
         self.fname = fname
         self.lname = lname
         self.role = role
-        self.credit = credit
+        self.credit = int(credit)
 
     def str(self):
         return f"Username: {self.username}, First name: {self.fname}, Last name: {self.lname}, role: {self.role}, credit: {self.credit}"

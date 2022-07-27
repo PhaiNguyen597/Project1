@@ -24,7 +24,7 @@ user_lst = []
 global game_lst
 game_lst = []
 global role
-role = 0
+role = 3
 global user_obj
 user_obj = p1_users.User("Guest", "123", "Guest", "Guest", "Guest", 0)
 
@@ -33,9 +33,9 @@ def main():
     global running
     global curruser
     global role
-    read_user_data()
-    read_game_data()
     while running:
+        read_user_data()
+        read_game_data()
         time.sleep(0.5)
         command = input(f"What would you like to do, {curruser}? >>>")
         run_command(command, role)
@@ -54,15 +54,16 @@ def run_command(command, role):
             print("/logout - Logs the user out")
             print("/info - Displays info on your user only")
             print("/buy - Buys a specified game")
-            print("/displaygames - Displays information of all the games")
         # Assosciate commands
         if role >= 2:
+            print("*** ASSOSCIATE COMMANDS ***")
             print("/sell - Adds a game for specified price into the stock")
             print(
                 "/discount - Places a discount on an already existing game by percentages"
             )
         # Admin commands
         if role >= 3:
+            print("*** ADMIN COMMANDS ***")
             print("/displayusers - Displays information of all the users")
             print("/credit - Give specified user amount of credit")
             print("/changeroll - Makes a specified user's role into another role")
@@ -81,8 +82,6 @@ def run_command(command, role):
         buy_game()
     elif command == "/sell":
         sell_game()
-    elif command == "/displaygames":
-        display_games()
     elif command == "/exit":
         print("Now terminating program")
         time.sleep(1)
@@ -199,17 +198,35 @@ def display_user_info():
         )
 
 
-# Displays the entire table of games being sold
-def display_games():
+# Displays the entire table of games being sold and prompts user to choose which game they want to buy.
+def buy_game():
+    global user_obj
+    global game_lst
     global role
     if role < 1:
         print("Insufficient permission.\nReturning to main menu...")
         return
-    read_game_data()
-    global game_lst
     print("ALL GAMES: ")
-    for elem in range(len(game_lst) - 1):
-        print(f"Title: {game_lst[elem].title} Price: {game_lst[elem].price}")
+    for elem in range(len(game_lst)):
+        print(
+            f"{game_lst[elem].id})Title: {game_lst[elem].title} Price: {game_lst[elem].price}"
+        )
+    try:
+        chosen_game = int(
+            input("Enter the number of the game you would like to buy: >>>")
+        )
+        if chosen_game > len(game_lst):
+            print("ERROR: Game id does not exist!\nReturning to main menu...")
+        else:
+            for elem in game_lst:
+                if int(elem.id) == chosen_game:
+                    game_obj = p1_games.Game(elem.id, elem.title, elem.price)
+                    if user_obj.credit < game_obj.price:
+                        print("Insufficient credit!")
+                    else:
+                        print("Game bought sucessfully!")
+    except ValueError:
+        print("Must be number!\nReturning to main menu...")
 
 
 # Checks if username is taken for /register
@@ -222,11 +239,7 @@ def check_existing_user(username):
     return False
 
 
-# Checks if user has enough credit and removes game from database if he does
-def buy_game():
-    pass
-
-
+# Adds a game to the games database to sell.
 def sell_game():
     global role
     if role < 2:
@@ -238,28 +251,29 @@ def sell_game():
     except:
         print("Price must be a number!\nReturning to main menu...")
         return
-    game = p1_games.Game(title, price)
-    game_lst.append(game)
     data_lst = []
-    data_lst.append(game.title)
-    data_lst.append(game.price)
+    data_lst.append(title)
+    data_lst.append(price)
     add_data(data_lst, game_database)
 
 
 def read_game_data():
     global game_lst
+    game_lst = []
     query = "SELECT * FROM games"
     cursor.execute(query)
     for record in cursor:
+        id = str(record[0])
         title = record[1]
         price = record[2]
-        game = p1_games.Game(title, price)
+        game = p1_games.Game(id, title, price)
         game_lst.append(game)
 
 
 # Reads data into a global list
 def read_user_data():
     global user_lst
+    user_lst = []
     query = "SELECT * FROM users"
     cursor.execute(query)
     for record in cursor:
