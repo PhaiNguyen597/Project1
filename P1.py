@@ -21,15 +21,15 @@ print("To get started, type /help for a list of commands")
 global running
 running = True
 global curruser
-curruser = "Yeti"
+curruser = "Guest"
 global user_lst
 user_lst = []
 global game_lst
 game_lst = []
 global role
-role = 3
+role = 0
 global user_obj
-user_obj = p1_users.User(1, "Guest", "123", "Guest", "Guest", "Guest", 0)
+user_obj = p1_users.User(0, "Guest", "123", "Guest", "Guest", "Guest", 0)
 
 
 def main():
@@ -72,6 +72,7 @@ def run_command(command, role):
             print("/credit - Give specified user amount of credit")
             print("/changerole - Makes a specified user's role into another role")
             print("/logs - Checks the buying/selling logs")
+
     elif command == "/login":
         login_user()
     elif command == "/logout":
@@ -175,7 +176,6 @@ def login_user():
     global curruser
     global role
     global user_obj
-    read_user_data()
     username = input("Enter in your username: >>>")
     password = input("Enter in your password: >>>")
     for elem in user_lst:
@@ -283,7 +283,6 @@ def buy_game():
                         print("Game bought sucessfully!")
                         delete_data(elem.id, "games")
                         add_data(data_lst, "owned")
-                        read_game_data()
                         logging.info(
                             f"{user_obj.username} bought {game_obj.title} for ${game_obj.price} on {datetime.now()}"
                         )
@@ -294,7 +293,6 @@ def buy_game():
 # Checks if username is taken for /register
 def check_existing_user(username):
     global user_lst
-    read_user_data()
     for data in user_lst:
         if data.username == username:
             return True
@@ -323,7 +321,7 @@ def sell_game():
     )
     add_data(data_lst, game_database)
 
-
+#Applies a percentage discount to one of the games.
 def discount_game():
     global user_obj
     global game_lst
@@ -372,11 +370,10 @@ def discount_game():
         logging.info(
             f"{curruser} applied a discount of ${price * amount} to {title}, bringing the total to ${new_price} on {datetime.now()}"
         )
-        read_game_data()
     except:
         print("Invalid input.\nReturning to main menu...")
 
-
+#Gives a specified user a specified amount of credits
 def credit_user():
     global role
     global user_lst
@@ -406,11 +403,14 @@ def credit_user():
     except:
         print("ERROR: INTEGER expected")
 
-
+#Changes the role of a specified user to a specified role
 def change_role():
     global role
     global curruser
     global user_lst
+    if role < 3:
+        print("Insufficient permissions!\nReturning to main menu...")
+        return
     display_users()
     try:
         id = int(
@@ -435,7 +435,7 @@ def change_role():
     except:
         print("ERROR: Incorrect input received.\nReturning to main menu...")
 
-
+#Reads all games in stock to global list
 def read_game_data():
     global game_lst
     game_lst = []
@@ -466,10 +466,13 @@ def read_user_data():
         user = p1_users.User(id, username, pw, fname, lname, role, credit)
         user_lst.append(user)
 
-
+#Reads data of owned games for SPECIFIC user
 def read_owned_data():
     global curruser
     global user_lst
+    if check_login() == False:
+        print("Not logged in!")
+        return
     for elem in user_lst:
         if elem.username == curruser:
             try:
@@ -483,7 +486,7 @@ def read_owned_data():
                     "No games owned! Try buying one with /buy\nReturning to main menu..."
                 )
 
-
+#Prints the entirety of logs.txt to console
 def logs():
     global role
     if role < 3:
