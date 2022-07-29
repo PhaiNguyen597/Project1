@@ -2,7 +2,8 @@ from ssl import _create_unverified_context
 
 
 class User:
-    def __init__(self, username, pw, fname, lname, role, credit):
+    def __init__(self, id, username, pw, fname, lname, role, credit):
+        self.id = int(id)
         self.username = username
         self.pw = pw
         self.fname = fname
