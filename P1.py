@@ -1,4 +1,5 @@
 from logging import RootLogger
+from re import L
 from turtle import up
 import mysql.connector
 import p1_data as p
@@ -52,12 +53,14 @@ def run_command(command, role):
         print("/login - Logs the user in")
         print("/register - Registers a user with a username and password")
         print("/exit - Exits out of the program.")
+        print("/browse - Looks at the shelf for available games to buy")
         # Customer commands
         if role >= 1:
             print("/logout - Logs the user out")
             print("/info - Displays info on your user only")
             print("/buy - Buys a specified game")
             print("/games - Display all games you own")
+            print("/history - Displays your purchase history")
         # Assosciate commands
         if role >= 2:
             print("*** ASSOSCIATE COMMANDS ***")
@@ -72,7 +75,8 @@ def run_command(command, role):
             print("/credit - Give specified user amount of credit")
             print("/changerole - Makes a specified user's role into another role")
             print("/logs - Checks the buying/selling logs")
-
+    elif command == "/browse":
+        browse()
     elif command == "/login":
         login_user()
     elif command == "/logout":
@@ -85,6 +89,8 @@ def run_command(command, role):
         buy_game()
     elif command == "/games":
         read_owned_data()
+    elif command == "/history":
+        display_history()
     elif command == "/sell":
         sell_game()
     elif command == "/discount":
@@ -216,6 +222,22 @@ def logout():
         print("Logout successful!")
 
 
+# Displays purchase history of current user.
+def display_history():
+    global curruser
+    if check_login() == False:
+        print("You're not logged in!")
+        return
+    try:
+        file = open(f"purchases_{curruser}.txt", "r")
+        for lines in file:
+            if lines.isspace() == False:
+                print(lines, end="")
+        print()
+    except:
+        print("You haven't bought anything!")
+
+
 # Displays information on currently logged in user
 def display_user_info():
     global curruser
@@ -244,6 +266,13 @@ def display_users():
         )
 
 
+# Displays games on shelf
+def browse():
+    global game_lst
+    for elem in game_lst:
+        print(f"{elem.id}) Title: {elem.title}             Price: ${elem.price}")
+
+
 # Displays the entire table of games being sold and prompts user to choose which game they want to buy.
 def buy_game():
     global user_obj
@@ -255,7 +284,7 @@ def buy_game():
     print("ALL GAMES: ")
     for elem in range(len(game_lst)):
         print(
-            f"{game_lst[elem].id})Title: {game_lst[elem].title} Price: {game_lst[elem].price}"
+            f"{game_lst[elem].id})Title: {game_lst[elem].title}               Price: ${game_lst[elem].price}"
         )
     try:
         last_game = 0
@@ -286,6 +315,10 @@ def buy_game():
                         logging.info(
                             f"{user_obj.username} bought {game_obj.title} for ${game_obj.price} on {datetime.now()}"
                         )
+                        with open(f"purchases_{curruser}.txt", "a") as f:
+                            f.write(
+                                f"Bought {game_obj.title} for ${game_obj.price} on {datetime.now()}\n"
+                            )
     except ValueError:
         print("Must be number!\nReturning to main menu...")
 
@@ -321,7 +354,8 @@ def sell_game():
     )
     add_data(data_lst, game_database)
 
-#Applies a percentage discount to one of the games.
+
+# Applies a percentage discount to one of the games.
 def discount_game():
     global user_obj
     global game_lst
@@ -373,7 +407,8 @@ def discount_game():
     except:
         print("Invalid input.\nReturning to main menu...")
 
-#Gives a specified user a specified amount of credits
+
+# Gives a specified user a specified amount of credits
 def credit_user():
     global role
     global user_lst
@@ -403,7 +438,8 @@ def credit_user():
     except:
         print("ERROR: INTEGER expected")
 
-#Changes the role of a specified user to a specified role
+
+# Changes the role of a specified user to a specified role
 def change_role():
     global role
     global curruser
@@ -435,7 +471,8 @@ def change_role():
     except:
         print("ERROR: Incorrect input received.\nReturning to main menu...")
 
-#Reads all games in stock to global list
+
+# Reads all games in stock to global list
 def read_game_data():
     global game_lst
     game_lst = []
@@ -466,7 +503,8 @@ def read_user_data():
         user = p1_users.User(id, username, pw, fname, lname, role, credit)
         user_lst.append(user)
 
-#Reads data of owned games for SPECIFIC user
+
+# Reads data of owned games for SPECIFIC user
 def read_owned_data():
     global curruser
     global user_lst
@@ -486,7 +524,8 @@ def read_owned_data():
                     "No games owned! Try buying one with /buy\nReturning to main menu..."
                 )
 
-#Prints the entirety of logs.txt to console
+
+# Prints the entirety of logs.txt to console
 def logs():
     global role
     if role < 3:
