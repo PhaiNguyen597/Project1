@@ -75,6 +75,7 @@ def run_command(command, role):
             print("/credit - Give specified user amount of credit")
             print("/changerole - Makes a specified user's role into another role")
             print("/logs - Checks the buying/selling logs")
+            print("/remove - Removes a game from the shelf")
     elif command == "/browse":
         browse()
     elif command == "/login":
@@ -103,6 +104,8 @@ def run_command(command, role):
         change_role()
     elif command == "/logs":
         logs()
+    elif command == "/remove":
+        remove_game()
     elif command == "/exit":
         print("Now terminating program")
         time.sleep(1)
@@ -164,9 +167,6 @@ def register_user():
         else:
             username_loop = False
     pw = input("Enter your desired password: >>>")
-
-    user = p1_users.User(username, pw, fname, lname, "Customer", 60)
-    user_lst.append(user)
     logging.info(
         f"{fname} {lname} registered under the username {username} on {datetime.now()}"
     )
@@ -182,6 +182,9 @@ def login_user():
     global curruser
     global role
     global user_obj
+    if check_login() == True:
+        print("You are already logged in!\nReturning to main menu...")
+        return
     username = input("Enter in your username: >>>")
     password = input("Enter in your password: >>>")
     for elem in user_lst:
@@ -269,8 +272,30 @@ def display_users():
 # Displays games on shelf
 def browse():
     global game_lst
+    i = 1
     for elem in game_lst:
-        print(f"{elem.id}) Title: {elem.title}             Price: ${elem.price}")
+        print(f"{i}) Title: {elem.title}             Price: ${elem.price}")
+        i += 1
+
+
+def remove_game():
+    global user_obj
+    global game_lst
+    global role
+    if role < 3:
+        print("Insufficient permission.\nReturning to main menu...")
+        return
+    print("ALL GAMES: ")
+    for elem in range(len(game_lst)):
+        print(
+            f"Title: {game_lst[elem].title}               Price: ${game_lst[elem].price}"
+        )
+    chosen_game = input("Enter the title of the game you would like to buy: >>>")
+    for elem in game_lst:
+        if elem.title.lower() == chosen_game.lower():
+            delete_data(elem.id, "games")
+            logging.info(f"{user_obj.username} removed {elem.title} from the shelf!")
+            print("Ganme removed sucessfully!")
 
 
 # Displays the entire table of games being sold and prompts user to choose which game they want to buy.
@@ -284,43 +309,30 @@ def buy_game():
     print("ALL GAMES: ")
     for elem in range(len(game_lst)):
         print(
-            f"{game_lst[elem].id})Title: {game_lst[elem].title}               Price: ${game_lst[elem].price}"
+            f"Title: {game_lst[elem].title}               Price: ${game_lst[elem].price}"
         )
-    try:
-        last_game = 0
-        first_game = 100000000000
-        for elem in game_lst:
-            if int(elem.id) > last_game:
-                last_game = int(elem.id)
-            if int(elem.id) < first_game:
-                first_game = int(elem.id)
-        chosen_game = int(
-            input("Enter the number of the game you would like to buy: >>>")
-        )
-        if chosen_game > last_game or chosen_game < first_game:
-            print("ERROR: Game id does not exist!\nReturning to main menu...")
-        else:
-            for elem in game_lst:
-                if int(elem.id) == chosen_game:
-                    game_obj = p1_games.Game(elem.id, elem.title, elem.price)
-                    if user_obj.credit < game_obj.price:
-                        print("Insufficient credits!")
-                    else:
-                        data_lst = []
-                        data_lst.append(user_obj.id)
-                        data_lst.append(game_obj.title)
-                        print("Game bought sucessfully!")
-                        delete_data(elem.id, "games")
-                        add_data(data_lst, "owned")
-                        logging.info(
-                            f"{user_obj.username} bought {game_obj.title} for ${game_obj.price} on {datetime.now()}"
-                        )
-                        with open(f"purchases_{curruser}.txt", "a") as f:
-                            f.write(
-                                f"Bought {game_obj.title} for ${game_obj.price} on {datetime.now()}\n"
-                            )
-    except ValueError:
-        print("Must be number!\nReturning to main menu...")
+    chosen_game = input("Enter the title of the game you would like to buy: >>>")
+    for elem in game_lst:
+        if elem.title.lower() == chosen_game.lower():
+            game_obj = p1_games.Game(elem.id, elem.title, elem.price)
+            if user_obj.credit < game_obj.price:
+                print("Insufficient credits!")
+            else:
+                data_lst = []
+                data_lst.append(user_obj.id)
+                data_lst.append(game_obj.title)
+                print("Game bought sucessfully!")
+                delete_data(elem.id, "games")
+                add_data(data_lst, "owned")
+                logging.info(
+                    f"{user_obj.username} bought {game_obj.title} for ${game_obj.price} on {datetime.now()}"
+                )
+                with open(f"purchases_{curruser}.txt", "a") as f:
+                    f.write(
+                        f"Bought {game_obj.title} for ${game_obj.price} on {datetime.now()}\n"
+                    )
+            return
+    print("Game not found! Check your spelling maybe?...\nReturning to main menu...")
 
 
 # Checks if username is taken for /register
@@ -366,46 +378,41 @@ def discount_game():
         return
     print("ALL GAMES: ")
     for elem in range(len(game_lst)):
-        print(
-            f"{game_lst[elem].id})Title: {game_lst[elem].title} Price: {game_lst[elem].price}"
-        )
+        print(f"Title: {game_lst[elem].title} Price: {game_lst[elem].price}")
+    chosen_game = input("Which game would you like to apply a discount to? >>>")
+    for i in range(len(game_lst)):
+        if game_lst[i].title.lower() == chosen_game.lower():
+            break
+        if i == len(game_lst) - 1 and game_lst[i].title.lower() != chosen_game.lower():
+            print("No such game exists!\nReturning to main menu...")
+            return
     try:
-        last_game = 0
-        first_game = 100000000000
-        for elem in game_lst:
-            if int(elem.id) > last_game:
-                last_game = int(elem.id)
-            if int(elem.id) < first_game:
-                first_game = int(elem.id)
-        chosen_game = int(
-            input("Enter which game you would like to apply a discount to: >>>")
-        )
-        if chosen_game > last_game or chosen_game < first_game:
-            print("Invalid selection!\nReturning to main menu...")
-            return
         amount = float(
-            input(
-                "Enter the amount you would like to discount the chosen game by as a percentage (0-1): >>>"
+            input("Enter the amount you would like to discount the game by: >>>")
+        )
+        while amount < 0 or amount > 1:
+            amount = float(
+                input("Make sure the amount is greater than 0 and less than 1! >>>")
             )
-        )
-        if amount > 1 or amount < 0:
-            print("Invalid percentage!\nReturning to main menu...")
-            return
-        for elem in game_lst:
-            if elem.id == chosen_game:
-                price = elem.price
-                title = elem.title
-        new_price = format(price - (price * amount))
-        data_lst = []
-        data_lst.append(title)
-        data_lst.append(new_price)
-        update_data(chosen_game, data_lst, game_database)
-        print(f"Sucessfully changed price of {title} to ${new_price}")
-        logging.info(
-            f"{curruser} applied a discount of ${price * amount} to {title}, bringing the total to ${new_price} on {datetime.now()}"
-        )
     except:
-        print("Invalid input.\nReturning to main menu...")
+        print("Invalid input!\nReturning to main menu...")
+        return
+    for elem in game_lst:
+        if elem.title.lower() == chosen_game.lower():
+            price = elem.price
+            title = elem.title
+            id = elem.id
+    new_price = format(price - (price * amount))
+    if new_price <= 0:
+        new_price = 0
+    data_lst = []
+    data_lst.append(title)
+    data_lst.append(new_price)
+    update_data(id, data_lst, game_database)
+    print(f"Sucessfully changed price of {title} to ${new_price}")
+    logging.info(
+        f"{curruser} applied a discount of ${price * amount} to {title}, bringing the total to ${new_price} on {datetime.now()}"
+    )
 
 
 # Gives a specified user a specified amount of credits
@@ -517,8 +524,10 @@ def read_owned_data():
                 query = f"SELECT * FROM owned WHERE id = '{elem.id}'"
                 cursor.execute(query)
                 print("Games owned:")
+                i = 1
                 for record in cursor:
-                    print(f"1) {record[1]}")
+                    print(f"{i}) {record[1]}")
+                    i += 1
             except:
                 print(
                     "No games owned! Try buying one with /buy\nReturning to main menu..."
